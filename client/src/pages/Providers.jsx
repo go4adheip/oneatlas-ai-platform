@@ -15,7 +15,7 @@ function Providers() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/models")
+    fetch("https://oneatlas-ai-platform.onrender.com/api/models")
       .then((response) => {
         if (!response.ok) {
           throw new Error("Failed to load providers");

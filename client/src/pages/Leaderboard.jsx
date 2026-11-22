@@ -10,7 +10,7 @@ const [error, setError] = useState("");
 useEffect(() => {
 const fetchModels = async () => {
 try {
-const response = await fetch("http://localhost:5000/api/models");
+const response = await fetch("https://oneatlas-ai-platform.onrender.com/api/models");
 
     if (!response.ok) {
       throw new Error("Unable to fetch models.");

@@ -13,7 +13,7 @@ function ModelDetails() {
   useEffect(() => {
     const fetchModel = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/models");
+        const response = await fetch("https://oneatlas-ai-platform.onrender.com/api/models");
         const result = await response.json();
 
         if (!response.ok || !result.success || !Array.isArray(result.data)) {
