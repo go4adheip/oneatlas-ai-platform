@@ -1,7 +1,9 @@
+
 const express = require("express");
 const router = express.Router();
 const pool = require("../db");
 
+// 15 AI Models
 const models = [
   {
     id: 1,
@@ -170,23 +172,48 @@ const models = [
   }
 ];
 
-// Insert initial models into PostgreSQL.
+// Create database table automatically
+const ensureModelsTable = async () => {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS models (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      provider VARCHAR(100) NOT NULL,
+      category VARCHAR(100),
+      description TEXT,
+      capabilities JSONB,
+      input_price NUMERIC(12,6),
+      output_price NUMERIC(12,6),
+      context_window INTEGER
+    )
+  `);
+};
+
+// Insert initial models into PostgreSQL
 const seedModels = async () => {
   for (const model of models) {
     await pool.query(
-      `INSERT INTO models
-        (id, name, provider, category, description, capabilities,
-         input_price, output_price, context_window)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-       ON CONFLICT (id) DO UPDATE SET
-         name = EXCLUDED.name,
-         provider = EXCLUDED.provider,
-         category = EXCLUDED.category,
-         description = EXCLUDED.description,
-         capabilities = EXCLUDED.capabilities,
-         input_price = EXCLUDED.input_price,
-         output_price = EXCLUDED.output_price,
-         context_window = EXCLUDED.context_window`,
+      `INSERT INTO models (
+        id,
+        name,
+        provider,
+        category,
+        description,
+        capabilities,
+        input_price,
+        output_price,
+        context_window
+      )
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+      ON CONFLICT (id) DO UPDATE SET
+        name = EXCLUDED.name,
+        provider = EXCLUDED.provider,
+        category = EXCLUDED.category,
+        description = EXCLUDED.description,
+        capabilities = EXCLUDED.capabilities,
+        input_price = EXCLUDED.input_price,
+        output_price = EXCLUDED.output_price,
+        context_window = EXCLUDED.context_window`,
       [
         model.id,
         model.name,
@@ -201,17 +228,19 @@ const seedModels = async () => {
     );
   }
 
-  await pool.query(
-    `SELECT setval(
+  await pool.query(`
+    SELECT setval(
       pg_get_serial_sequence('models', 'id'),
       COALESCE((SELECT MAX(id) FROM models), 1)
-    )`
-  );
+    )
+  `);
 };
 
-// GET all models from PostgreSQL.
+// GET all models
 router.get("/", async (req, res) => {
   try {
+    await ensureModelsTable();
+
     await seedModels();
 
     const result = await pool.query(
@@ -235,12 +264,16 @@ router.get("/", async (req, res) => {
       count: formattedModels.length,
       data: formattedModels
     });
+
   } catch (error) {
-    console.error("Database error:", error.message);
+    console.error("Database error:", error);
 
     res.status(500).json({
       success: false,
-      message: "Unable to retrieve models from the database."
+      message: "Unable to retrieve models from the database.",
+      error: process.env.NODE_ENV === "production"
+        ? undefined
+        : error.message
     });
   }
 });
